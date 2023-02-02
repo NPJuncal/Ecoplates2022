@@ -1,0 +1,642 @@
+################################################################################
+# Article: Organic matter potential microbial consumption under aerobic and anaerobic conditions along salt marsh soil profiles.
+# Author: Nerea Piñeiro-Juncal (NPJuncal)
+# V 3.0
+# Year: 2023
+################################################################################
+
+
+setwd( "C:/Users/npjun/Dropbox/Proxectos/Margarita Salas 2021/Ecoplates 2022/R")# Set working directory
+
+#load libraries
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(reshape)
+library(tidyr)
+library(vegan)
+library(psych)
+library(ggrepel)
+library(cowplot)
+library(compositions)
+library(gridExtra)
+library(ggpubr)
+
+
+#############################
+#load and clean data from T0#
+#############################
+
+File<-"T0.csv"
+
+A<-read.csv(File, header=T, sep=";", dec=".")
+T0<-as.data.frame(A)
+
+
+# Load T4
+
+File<-"T4.csv"
+
+A<-read.csv(File, header=T, sep=";", dec=".")
+T4<-as.data.frame(A)
+
+
+
+#substract T0 to T4
+
+FT4<-cbind(T4[,c(1:6)],(T4[,c(7:102)])-(T0[,c(7:102)]))
+
+#some of the values for the control wells A0,A5,A9 and other wells were there was no consumption are negative
+#measure method error? we check how negative the values
+
+min(na.omit(FT4[,c(7:102)]))
+
+write.csv(FT4,"FT4.csv",sep=";", dec=",")
+
+#substitute negative values for 0
+FT4[FT4 < 0] <- 0 
+
+write.csv(FT4,"FT4_0.csv",sep=";", dec=",")
+
+# estimation of the Coefficient of variation among plate replicates
+
+FR<-FT4[,c(7:38)]#First replicate
+SR<-FT4[,c(39:70)]#second replicate
+TR<-FT4[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+FLR = aaply(laply(all.dat, as.matrix), c(2, 3), mean) # media de las tres replicas
+FLR.sd = aaply(laply(all.dat, as.matrix), c(2, 3), sd) # estandar deviation of three replicates
+FLR.cv<-FLR.sd/FLR # var coef of three replicates
+
+count(as.data.frame(FLR.cv>0.3))
+
+
+#There are some value in our plates that are very different from their replicates
+#For example HAL C 40-42 ANA T0 (A1: 0.5, A5: 0.1, A9: 0.1)
+#In this case we want to identify the deviated value and eliminate it
+#From FLR.cv we are going to get a list of compounds and plates were cv is higher than 0.3
+
+coords<-as.data.frame(which(FLR.cv > 0.3, arr.ind = TRUE))
+
+CV<- data.frame(R1=numeric(), 
+                R2=numeric(),
+                R3=numeric())#dataframe values to check
+
+
+for(i in 1:nrow(coords)) {
+  
+  CV[i,1]<-FR[coords[i,1],coords[i,2]]
+  CV[i,2]<-SR[coords[i,1],coords[i,2]]
+  CV[i,3]<-TR[coords[i,1],coords[i,2]]
+  
+}
+
+CV<-cbind(coords,CV) # visual identification of outlayer
+
+
+write.csv(CV,"CV.csv",sep=";", dec=",")
+
+
+###################################################################################
+### load data without outlayers and generate final values per plate and compound###
+###################################################################################
+
+# T4T ####
+File<-"FT4_cv.csv"
+
+T4T<-read.csv(File, header=T, sep=";", dec=".")
+T4T<-as.data.frame(T4T)
+
+#% of eliminated values over the total
+
+pc.dv<-((sum(is.na(T4T[-4,c(7:102)])))*100)/(nrow(T4T[-4,c(7:102)])*ncol(T4T[-4,c(7:102)]))
+print(pc.dv)
+
+# estimation of the mean value per plate and compound
+
+FR<-T4T[,c(7:38)]#First replicate
+SR<-T4T[,c(39:70)]#second replicate
+TR<-T4T[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+T4T_m = aaply(laply(all.dat, as.matrix), c(2, 3), mean, na.rm=TRUE)
+
+DF<-cbind(T4T[,c(1:6)],T4T_m)
+
+
+#Subtract plates measured without lid
+
+DF<-subset(DF, Tampa!="Nao")
+write.csv(DF,"DF.csv",sep=";", dec=",")
+
+#################################################
+### Built final dataframe for results analysis###
+#################################################
+
+# T4t ####
+#data.frame with the replicate plates
+Rep<-subset(DF,DF$Depth == 4 | DF$Depth == 42)
+
+DFA<-subset(DF, DF$Station == "ATR" & DF$Core == "C")
+DFB<-subset(DF, DF$Station =="BOL" & DF$Core == "A")
+DFJ<-subset(DF, DF$Station =="J" & DF$Core == "C")
+DFBB<-subset(DF, DF$Station =="BB" & DF$Core == "A")
+
+B<-as.data.frame(rbind(DFA,DFB,DFJ,DFBB))
+
+#substitute 4 and 42 plates by the average of the replicates
+
+ATR_Ana_4<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_4[,c(7:38)])))
+ATR_Aer_4<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(ATR_Aer_4[,c(7:38)])))
+ATR_Ana_42<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_42[,c(7:38)])))
+ATR_Aer_42<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(na.omit(ATR_Aer_42[,c(7:38)]))))
+
+
+BOL_Ana_4<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_4[,c(7:38)])))
+BOL_Aer_4<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_4[,c(7:38)])))
+BOL_Ana_42<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_42[,c(7:38)])))
+BOL_Aer_42<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_42[,c(7:38)])))
+
+
+BB_Ana_4<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_4[,c(7:38)])))
+BB_Aer_4<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_4[,c(7:38)])))
+BB_Ana_42<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_42[,c(7:38)])))
+BB_Aer_42<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_42[,c(7:38)])))
+
+J_Ana_4<-subset(Rep,Rep$Station == "J" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "J" & B$Depth == 4 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "J" & B$Depth == 4 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_4[,c(7:38)])))
+J_Aer_4<-subset(Rep,Rep$Station == "J" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "J" & B$Depth == 4 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "J" & B$Depth == 4 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_4[,c(7:38)])))
+J_Ana_42<-subset(Rep,Rep$Station == "J" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "J" & B$Depth == 42 & B$Met == "ANA"),]<-
+  c(as.character(B[which(B$Station == "J" & B$Depth == 42 & B$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_42[,c(7:38)])))
+J_Aer_42<-subset(Rep,Rep$Station == "J" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),]<-
+  c(as.character(B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_42[,c(7:38)])))
+
+
+#########################
+### Diversity indexes ###
+#########################
+
+# T4T ####
+B[,"AWCD"]<-NA
+B[,"AWCD.SE"]<-NA
+B[,"H"]<-NA
+B[,"H.SE"]<-NA
+
+
+for (i in 1:nrow(B)) {
+  
+  vec<-as.numeric(B[i,c(8:38)])
+  A1<-B[i,7]
+  B[i,"AWCD"]<- (sum(vec-as.numeric(A1))/31)
+  B[i,"H"]<-diversity(as.numeric(B[i,c(8:38)]), "shannon")}
+
+Rep<-subset(DF,DF$Depth == 4 | DF$Depth == 42)
+Rep[,"AWCD"]<-NA
+Rep[,"H"]<-NA
+
+for (i in 1:nrow(Rep)) {
+  
+  vec<-as.numeric(Rep[i,c(8:38)])
+  A1<-Rep[i,7]
+  Rep[i,"AWCD"]<- (sum(vec-A1)/31)
+  Rep[i,"H"]<-diversity(Rep[i,c(8:38)], "shannon")}
+
+
+ATR_Ana_4<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "ANA"),"AWCD.SE"]<-sd(ATR_Ana_4$AWCD)/nrow(ATR_Ana_4)
+B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "ANA"),"H.SE"]<-sd(ATR_Ana_4$H)/nrow(ATR_Ana_4)
+ATR_Aer_4<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "AER"),"AWCD.SE"]<-sd(ATR_Aer_4$AWCD)/nrow(ATR_Aer_4)
+B[which(B$Station == "ATR" & B$Depth == 4 & B$Met == "AER"),"H.SE"]<-sd(ATR_Aer_4$H)/nrow(ATR_Aer_4)
+ATR_Ana_42<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "ANA"),"AWCD.SE"]<-sd(ATR_Ana_42$AWCD)/nrow(ATR_Ana_42)
+B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "ANA"),"H.SE"]<-sd(ATR_Ana_42$H)/nrow(ATR_Ana_42)
+ATR_Aer_42<-subset(Rep,Rep$Station == "ATR" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "AER"),"AWCD.SE"]<-sd(ATR_Aer_42$AWCD)/nrow(ATR_Aer_42)
+B[which(B$Station == "ATR" & B$Depth == 42 & B$Met == "AER"),"H.SE"]<-sd(ATR_Aer_42$H)/nrow(ATR_Aer_42)
+
+
+BOL_Ana_4<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_4$AWCD)/nrow(BOL_Ana_4)
+B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_4$H)/nrow(BOL_Ana_4)
+BOL_Aer_4<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_4$AWCD)/nrow(BOL_Aer_4)
+B[which(B$Station == "BOL" & B$Depth == 4 & B$Met == "AER"),"H.SE"]<-sd(BOL_Aer_4$H)/nrow(BOL_Aer_4)
+BOL_Ana_42<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_42$AWCD)/nrow(BOL_Ana_42)
+B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_42$H)/nrow(BOL_Ana_42)
+BOL_Aer_42<-subset(Rep,Rep$Station == "BOL" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_42$AWCD)/nrow(BOL_Aer_42)
+B[which(B$Station == "BOL" & B$Depth == 42 & B$Met == "AER"),"H.SE"]<-sd(BOL_Aer_42$H)/nrow(BOL_Aer_42)
+
+
+BB_Ana_4<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_4$AWCD)/nrow(BB_Ana_4)
+B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "ANA"),"H.SE"]<-sd(BB_Ana_4$H)/nrow(BB_Ana_4)
+BB_Aer_4<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_4$AWCD)/nrow(BB_Aer_4)
+B[which(B$Station == "BB" & B$Depth == 4 & B$Met == "AER"),"H.SE"]<-sd(BB_Aer_4$H)/nrow(BB_Aer_4)
+BB_Ana_42<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_42$AWCD)/nrow(BB_Ana_42)
+B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "ANA"),"H.SE"]<-sd(BB_Ana_42$H)/nrow(BB_Ana_42)
+BB_Aer_42<-subset(Rep,Rep$Station == "BB" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_42$AWCD)/nrow(BB_Aer_42)
+B[which(B$Station == "BB" & B$Depth == 42 & B$Met == "AER"),"H.SE"]<-sd(BB_Aer_42$H)/nrow(BB_Aer_42)
+
+
+J_Ana_4<-subset(Rep,Rep$Station == "J" & Rep$Depth == 4 & Rep$Met == "ANA")
+B[which(B$Station == "J" & B$Depth == 4 & B$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_4$AWCD)/nrow(J_Ana_4)
+B[which(B$Station == "J" & B$Depth == 4 & B$Met == "ANA"),"H.SE"]<-sd(J_Ana_4$H)/nrow(J_Ana_4)
+J_Aer_4<-subset(Rep,Rep$Station == "J" & Rep$Depth == 4 & Rep$Met == "AER")
+B[which(B$Station == "J" & B$Depth == 4 & B$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_4$AWCD)/nrow(J_Aer_4)
+B[which(B$Station == "J" & B$Depth == 4 & B$Met == "AER"),"H.SE"]<-sd(J_Aer_4$H)/nrow(J_Aer_4)
+J_Ana_42<-subset(Rep,Rep$Station == "J" & Rep$Depth == 42 & Rep$Met == "ANA")
+B[which(B$Station == "J" & B$Depth == 42 & B$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_42$AWCD)/nrow(J_Ana_42)
+B[which(B$Station == "J" & B$Depth == 42 & B$Met == "ANA"),"H.SE"]<-sd(J_Ana_42$H)/nrow(J_Ana_42)
+J_Aer_42<-subset(Rep,Rep$Station == "J" & Rep$Depth == 42 & Rep$Met == "AER")
+B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_42$AWCD)/nrow(J_Aer_42)
+B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),"H.SE"]<-sd(J_Aer_42$H)/nrow(J_Aer_42)
+
+
+########################################################
+### Significant differences between metabolisms (T4) ###
+########################################################
+
+C<- B[-c(20,21,42),] #data.frame with only samples where we have data for both AER and ANA 
+
+#AWCD
+
+AWCD.AER<-C$AWCD[C$Met == "AER"]
+AWCD.ANA<-C$AWCD[C$Met == "ANA"]
+
+shapiro.test(AWCD.AER) ### normality (>0.05 normal, <0.05 no normal) 
+
+#F-test requires normality
+
+var.test(AWCD ~ Met, data = C) #>0.05 no significant difference between the two variances
+
+t.test(AWCD.AER, AWCD.ANA) # p <0.05 significant differences
+
+#ggplot(C,aes(x=factor(Met), AWCD)) + 
+#geom_boxplot(fill="grey",alpha=0.5)+
+#geom_jitter(aes(color=Station))+
+#scale_colour_manual(values = c("blue","red","orange","black"))
+
+
+Bxp.AWCD<-ggplot(C,aes(x=factor(Met), AWCD)) + ylab("Average Well Color Development (AWCD)")+
+  geom_boxplot(aes(x=factor(Met), AWCD),fill="grey",alpha=0.5)+
+  geom_point(aes(color=Station),position=position_dodge(width=0.5))+
+  scale_colour_manual(values = c("blue","red","orange","black"))+
+  geom_errorbar(
+    aes(ymin=AWCD-AWCD.SE, ymax=AWCD+AWCD.SE, color=Station),
+    width = 0.1,
+    #linetype = "dotted",
+    position=position_dodge(width=0.5))+
+  theme(axis.title.x=element_blank(),
+        legend.position="none")
+
+
+ggplot(C,aes(x=factor(Met), AWCD)) + ylab("Average Well Color Development (AWCD)")+
+  geom_boxplot(aes(x=factor(Met), AWCD),fill="grey",alpha=0.5)+
+  geom_point(aes(color=Station),position=position_dodge(width=0.5))+
+  scale_colour_manual(values = c("blue","red","orange","black"))+
+  geom_errorbar(
+    aes(ymin=AWCD-AWCD.SE, ymax=AWCD+AWCD.SE, color=Station),
+    width = 0.1,
+    #linetype = "dotted",
+    position=position_dodge(width=0.5))+
+  facet_wrap(~Station, scale="fixed")
+
+C$Depth<-as.numeric(C$Depth)
+
+ggplot(C,aes(Depth,AWCD))+ ylab("Average Well Color Development (AWCD)")+
+  geom_point(aes(color=Met))+
+  coord_flip()+
+  scale_x_reverse()+
+  facet_wrap(~Station, scale="fixed")
+
+
+####Shannon-Wiener Diversity
+
+H.AER<-C$H[C$Met == "AER"]
+H.ANA<-C$H[C$Met == "ANA"]
+
+H.AER<-H.AER[-21]#delete outlier
+H.ANA<-H.ANA[-21]#in the other met as well to compensate the groups
+
+shapiro.test(H.ANA) ### normality (>0.05 normal, <0.05 no normal) 
+
+#F-test requires normality
+
+var.test(H ~ Met, data = C[-c(39,42),]) #>0.05 no significant difference between the two variances
+#C[-c(39,42),] because of the outlier
+t.test(H.AER, H.ANA)
+
+#ggplot(C[-c(39,42),],aes(x=factor(Met), H)) + 
+#geom_boxplot(fill="grey",alpha=0.5)+
+#geom_jitter(aes(color=Station))+
+#scale_colour_manual(values = c("blue","red","orange","black"))
+
+#ggplot(C[-c(39,42),], aes(x=Station, y=H, fill=Met)) + 
+#geom_boxplot() + geom_jitter()+
+#facet_wrap(~Station, scale="free")
+
+Bxp.H<-ggplot(C,aes(x=factor(Met), H)) + ylab("Shannon-Wiener diversity index (H')")+
+  geom_boxplot(aes(x=factor(Met), H),fill="grey",alpha=0.5)+
+  geom_point(aes(color=Station),position=position_dodge(width=0.5))+
+  scale_colour_manual(values = c("blue","red","orange","black"))+
+  geom_errorbar(
+    aes(ymin=H-H.SE, ymax=H+H.SE, color=Station),
+    width = 0.1,
+    #linetype = "dotted",
+    position=position_dodge(width=0.5))+
+  theme(axis.title.x=element_blank())
+
+ggplot(C,aes(x=factor(Met), H)) + ylab("Shannon-Wiener diversity index (H')")+
+  geom_boxplot(aes(x=factor(Met), H),fill="grey",alpha=0.5)+
+  geom_point(aes(color=Station),position=position_dodge(width=0.5))+
+  scale_colour_manual(values = c("blue","red","orange","black"))+
+  geom_errorbar(
+    aes(ymin=H-H.SE, ymax=H+H.SE, color=Station),
+    width = 0.1,
+    #linetype = "dotted",
+    position=position_dodge(width=0.5))+
+  facet_wrap(~Station, scale="fixed")
+
+#Aer.vs.ana<-grid.arrange(Bxp.AWCD,Bxp.H,nrow=1, top="Aerobic (AER) vs Anaerobic (ANA) incubations")
+
+Aer.vs.ana<-plot_grid(Bxp.AWCD,Bxp.H, align = "h", nrow = 1, rel_widths = c(5/6, 1),labels=c('A', 'B'))
+
+ggsave("Aer.vs.ana.jpg",Aer.vs.ana, units="cm", width = 20, height = 10)
+
+
+#C$Depth<-as.numeric(C$Depth)
+
+ggplot(C,aes(Depth,H))+ ylab("Shannon-Wiener diversity index (H')")+
+  geom_point(aes(color=Met))+
+  coord_flip()+
+  scale_x_reverse()+
+  facet_wrap(~Station, scale="fixed")
+
+
+
+### Significant differences between stations ###
+
+C2<- subset(B, B$Depth == "16" | B$Depth == "26" | B$Depth == "42")
+
+C2.AER<-subset(C2, Met == "AER")
+C2.ANA<-subset(C2, Met == "ANA")
+
+ggplot(C2.AER, aes(Station,H))+geom_point()
+
+
+############################
+### Compound consumption ###
+############################
+
+AER.B<-filter(B,B$Met == "AER")
+AER.B$Depth[AER.B$Depth == "4"] <- "04"
+AER.B<-AER.B %>% mutate(Sample=paste(AER.B$Station,AER.B$Depth))
+
+ANA.B<-filter(B,B$Met == "ANA")
+ANA.B$Depth[ANA.B$Depth == "4"] <- "04"
+ANA.B<-ANA.B %>% mutate(Sample=paste(ANA.B$Station,ANA.B$Depth))
+
+write.csv(B,"FinalData.csv",sep=";", dec=",")
+
+
+### Average compound consumption per station
+
+MeansSt<-data.frame(ID=character(),
+                    MetID=character())
+
+MeansSt[1,1]<-"ATR"
+MeansSt[1,2]<-"AER"
+AER.B_ATR<-filter(AER.B,AER.B$Station == "ATR")
+AER.B_ATR[,c(8:38)]<-apply(AER.B_ATR[,c(8:38)],2,as.numeric)
+MeansSt[1,c(3:33)]<-apply(AER.B_ATR[,c(8:38)],2,mean)
+
+MeansSt[2,1]<-"ATR"
+MeansSt[2,2]<-"ANA"
+ANA.B_ATR<-filter(ANA.B,ANA.B$Station == "ATR")
+ANA.B_ATR[,c(8:38)]<-apply(ANA.B_ATR[,c(8:38)],2,as.numeric)
+MeansSt[2,c(3:33)]<-apply(ANA.B_ATR[,c(8:38)],2,mean)
+
+MeansSt[3,1]<-"BOL"
+MeansSt[3,2]<-"AER"
+AER.B_BOL<-filter(AER.B,AER.B$Station == "BOL")
+AER.B_BOL[,c(8:38)]<-apply(AER.B_BOL[,c(8:38)],2,as.numeric)
+MeansSt[3,c(3:33)]<-apply(AER.B_BOL[,c(8:38)],2,mean)
+
+MeansSt[4,1]<-"BOL"
+MeansSt[4,2]<-"ANA"
+ANA.B_BOL<-filter(ANA.B,ANA.B$Station == "BOL")
+ANA.B_BOL[,c(8:38)]<-apply(ANA.B_BOL[,c(8:38)],2,as.numeric)
+MeansSt[4,c(3:33)]<-apply(ANA.B_BOL[,c(8:38)],2,mean)
+
+MeansSt[5,1]<-"J"
+MeansSt[5,2]<-"AER"
+AER.B_J<-filter(AER.B,AER.B$Station == "J")
+AER.B_J[,c(8:38)]<-apply(AER.B_J[,c(8:38)],2,as.numeric)
+MeansSt[5,c(3:33)]<-apply(AER.B_J[,c(8:38)],2,mean)
+
+MeansSt[6,1]<-"J"
+MeansSt[6,2]<-"ANA"
+ANA.B_J<-filter(ANA.B,ANA.B$Station == "J")
+ANA.B_J[,c(8:38)]<-apply(ANA.B_J[,c(8:38)],2,as.numeric)
+MeansSt[6,c(3:33)]<-apply(ANA.B_J[,c(8:38)],2,mean)
+
+MeansSt[7,1]<-"BB"
+MeansSt[7,2]<-"AER"
+AER.B_BB<-filter(AER.B,AER.B$Station == "BB")
+AER.B_BB[,c(8:38)]<-apply(AER.B_BB[,c(8:38)],2,as.numeric)
+MeansSt[7,c(3:33)]<-apply(AER.B_BB[,c(8:38)],2,mean)
+
+MeansSt[8,1]<-"BB"
+MeansSt[8,2]<-"ANA"
+ANA.B_BB<-filter(ANA.B,ANA.B$Station == "BB")
+ANA.B_BB[,c(8:38)]<-apply(ANA.B_BB[,c(8:38)],2,as.numeric)
+MeansSt[8,c(3:33)]<-apply(ANA.B_BB[,c(8:38)],2,mean)
+
+CS<-colnames(B[,c(8:38)])
+colnames(MeansSt)<-c("Station","Met",CS)
+
+MeansSt<-MeansSt %>% mutate(Sample=paste(MeansSt$Station,MeansSt$Met))
+MeansStm <- melt(MeansSt[,c(3:34)], id.vars="Sample")
+MeansStm[,'Guilt'] <- MeansStm[,2]
+MeansStm$Guilt<-as.character(MeansStm$Guilt)
+
+MeansStm$Guilt[MeansStm$Guilt == "B1"|MeansStm$Guilt == "G2"|MeansStm$Guilt == "H2"] <- "Miscellaneous "
+MeansStm$Guilt[MeansStm$Guilt == "C1"|MeansStm$Guilt == "D1"|MeansStm$Guilt == "F1"|MeansStm$Guilt == "E1"] <- "Polymers"
+MeansStm$Guilt[MeansStm$Guilt == "G1"|MeansStm$Guilt =="H1"|MeansStm$Guilt == "A2"| MeansStm$Guilt =="B2"| MeansStm$Guilt =="C2"| MeansStm$Guilt =="D2"| MeansStm$Guilt =="E2"] <- "Carbohydrates"
+MeansStm$Guilt[MeansStm$Guilt == "F2"|MeansStm$Guilt =="A3"|MeansStm$Guilt == "B3"| MeansStm$Guilt =="C3"| MeansStm$Guilt =="D3"| MeansStm$Guilt =="E3"| MeansStm$Guilt =="F3"| MeansStm$Guilt =="G3"| MeansStm$Guilt =="H3"] <- "Carboxylic acids"
+MeansStm$Guilt[MeansStm$Guilt == "A4"|MeansStm$Guilt =="B4"|MeansStm$Guilt == "C4"| MeansStm$Guilt =="D4"| MeansStm$Guilt =="E4"| MeansStm$Guilt =="F4"] <- "Amino acids"
+MeansStm$Guilt[MeansStm$Guilt == "G4"|MeansStm$Guilt == "H4"] <- "Amines"
+
+
+CsC<-ggplot(MeansStm, aes(value,Sample))+ xlab("Average Color Development")+ ylab("Station & Metabolism")+
+  geom_point()+
+  #geom_rect(aes(xmin=(mean(B$A1)-sd(B$A1)), xmax=(mean(B$A1)+sd(B$A1)), ymin=0, ymax=Inf),fill="grey",alpha=0.02)+
+  geom_vline(xintercept = mean(as.numeric(B$A1)))+
+  geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
+  geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
+  facet_wrap(~Guilt, scale="fixed", ncol = 2)
+
+ggsave("Carbon sources comp.jpg",CsC, units="cm", width = 10, height = 20)
+
+
+##################################
+### Raw results representation ###
+##################################
+
+#Load Data again to use not transformed data!
+
+Data<-read.csv("Cores.csv", header=T, sep=";", dec=".")
+Data<-as.data.frame(Data)
+
+Data2<-subset(Data, Data$Core_ID == "ATR_C" | Data$Core_ID == "BOL_A" | Data$Core_ID == "BB_A" | Data$Core_ID == "J_C")
+
+#OM and CaCO3 
+
+# signifficative diferences
+
+shapiro.test(Data$OM)### normality (>0.05 normal, <0.05 no normal) 
+shapiro.test(log(Data$OM))
+
+anova<-(aov(log(OM) ~ Station, Data)) # ANOVA
+summary(anova)
+tukey<-TukeyHSD(aov(log(OM) ~ Station, Data))
+print(tukey)
+
+
+## collecting the groups information for the boxplot
+library(multcompView)
+let<-multcompLetters4(anova,tukey)
+print(let)
+
+Tk<-group_by(Data,Station)%>%
+  summarise(mean=mean(OM,,na.rm=T),quant=quantile(OM, probs=0.75,na.rm=T)) %>%
+  arrange(desc(mean))
+
+let<-as.data.frame.list(let$Station)
+Tk$let<-let$Letters
+print(Tk)
+
+
+#CaCO3
+shapiro.test(Data$CaCO3) ### normality (>0.05 normal, <0.05 no normal) 
+shapiro.test(log(Data$CaCO3))
+
+#summary(aov(CaCO3 ~ Station, Data)) # ANOVA
+#TukeyHSD(aov(CaCO3 ~ Station, Data))
+
+
+pair<-pairwise.wilcox.test(Data$CaCO3, Data$Station,
+                           p.adjust.method = "BH")
+print(pair)
+
+#manually adding the letter for the boxplots
+Tk2<-group_by(Data,Station)%>%
+  summarise(mean=mean(CaCO3,,na.rm=T),quant=quantile(OM, probs=0.75,na.rm=T)) %>%
+  arrange(desc(mean))
+Tk2$let<-c("b","b","b","a")
+
+# plots
+
+P1<-ggplot(Data2,aes(OM,Depth))+
+  ggtitle("A") +
+  xlab("%")+
+  geom_point(aes(OM,Depth, shape="Organic matter"))+
+  geom_point(aes(CaCO3,Depth, shape="Carbonates"))+
+  scale_y_reverse()+
+  facet_grid( ~ Station, scale ='fixed')+
+  theme(plot.title = element_text(hjust = 0))
+
+P2<-ggplot(Data,aes(x=factor(Station), OM)) + ylab("Organic Matter % (LOI 450ºC)")+xlab("Station")+
+  ggtitle("B") +
+  geom_boxplot(aes(x=factor(Station), OM),fill="grey",alpha=0.5)+
+  #geom_jitter()+
+  geom_text(data=Tk, aes(label=let, x=Station, y=50), size=4)
+#hjust=-1,
+
+P3<-ggplot(Data,aes(x=factor(Station), CaCO3)) + labs(y = expression("CaCO"["3"] ~ "% (LOI 950ºC)"))+xlab("Station")+
+  ggtitle("C") +
+  geom_boxplot(aes(x=factor(Station), CaCO3),fill="grey",alpha=0.5)+
+  #geom_jitter()+
+  geom_text(data=Tk2, aes(label=let, x=Station, y=17), size=4)
+
+
+grid.arrange(P1, P2, P3, nrow=2 ,ncol = 2, layout_matrix = cbind(c(1,2),c(1,3)))
+
+
+## grain size
+
+DataGr <- melt(Data2[,c(2,5:12)], id.vars = c("Depth","Station"))
+DataGr$variable <- factor(DataGr$variable,levels = c("Clay","Silt","F_Sand","M_Sand","C_Sand","VC_Sand","Gravel"))
+DataGr$value<-DataGr$value*100
+
+P1<-ggplot(DataGr, aes(fill=variable, y=value, x=Depth)) + ylab("Proportion of grain size particles")+
+  coord_flip()+
+  ggtitle("A") +
+  scale_x_reverse()+
+  scale_y_continuous(labels = function(x) {
+    x[seq_along(x) %% 2 == 1] <- ""
+    x
+  })+
+  facet_grid( ~ Station, scale ='fixed')+
+  geom_bar(position="fill", stat="identity")+
+  scale_fill_grey(start = 0, end = .9)+
+  theme_bw()+
+  theme(plot.title = element_text(hjust = 0))
+
+
+P2<-ggplot(Data,aes(x=factor(Station), Clay)) + ylab("Clay (<0.063 mm) % ")+
+  geom_boxplot(aes(x=factor(Station), Clay),fill="grey",alpha=0.5)+
+  geom_jitter()+
+  ggtitle("B") +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        axis.title.x = element_blank()
+        #axis.text.y=element_blank(),
+        #axis.ticks.y=element_blank()
+  )
+
+P3<-ggplot(Data,aes(x=factor(Station), Silt)) + ylab("Silt (0.063-0.125 mm) %")+xlab("Station")+
+  ggtitle("C") +
+  geom_boxplot(aes(x=factor(Station), Silt),fill="grey",alpha=0.5)+
+  geom_jitter()
+
+
+grid.arrange(P1, P2, P3, ncol = 3, 
+             layout_matrix = cbind(c(1,1), c(1,1),c(2,3)))
+
