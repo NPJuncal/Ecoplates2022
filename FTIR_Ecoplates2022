@@ -1,0 +1,78 @@
+################################################################################
+# Article: Organic matter potential microbial consumption under aerobic and anaerobic conditions along salt marsh soil profiles.
+# Part 2
+# V 1.2
+# Author: Nerea Piñeiro-Juncal (@NPJuncal)
+# Year: 2023
+################################################################################
+
+
+setwd("C:/Users/npjun/Dropbox/Proxectos/Margarita Salas 2021/Ecoplates 2022/FTIR")
+
+library(ggplot2)
+library(dplyr)
+library(psych)
+library(corrplot)
+library(matrixStats)
+library(TTR)
+library(reshape)
+
+
+####PCA transpuesta + Ecoplates ####
+
+File<-"Spectra.Ecop.csv"
+
+A<-read.csv(File, header=T, sep=";", dec=".")
+A<-as.data.frame(A)
+
+head(A)
+
+pca<-A[,-1]
+
+PCA<-principal(pca, nfactors=20, residual=T, rotate="varimax", covar=F)
+print(PCA)
+
+# loading #
+loa <-loadings(PCA)
+loa <-as.data.frame(loa[,1:ncol(loa)])
+write.csv(loa,"loa_t_Ecop.csv",sep=";", dec=",")
+
+# scores #
+sco<-PCA$scores
+sco<-as.data.frame(sco)
+sco<-cbind(A[,1],sco)
+sco[, 1] <- sapply(sco[, 1], as.numeric)
+
+
+# plots ####
+
+colnames(sco)<-c("WN","PC1","PC2","PC3","PC4","PC5","PC6","PC7","PC8","PC9"
+                 ,"PC10","PC11","PC12","PC13","PC14","PC15","PC16","PC17","PC18","PC19","PC20")
+
+colnames(loa)<-c("PC1","PC2","PC3","PC4","PC5","PC6","PC7","PC8","PC9"
+                 ,"PC10","PC11","PC12","PC13","PC14","PC15","PC16","PC17","PC18","PC19","PC20")
+
+loa.s<-loa[c(1:24),]
+loa.s$Depth<-c(4,16,26,42,4,16,26,42,54,66,86,4,16,26,42,54,66,76,4,16,26,42,54,64)
+loa.s$Station<-c("BB","BB","BB","BB","BOL","BOL","BOL","BOL","BOL","BOL","BOL","ATR","ATR","ATR","ATR","ATR","ATR","ATR","J","J","J","J","J","J")
+
+write.csv(sco,"Sco_t_Ecop.csv", sep=";", dec=".")
+
+
+Spec<-ggplot(A, aes(WL,runMean(scale(F4.1))))+xlab("Wavenumber (cm-1)")+ylab("Scaled absorbance and scores")+
+  geom_line(size=1)+
+  #geom_line(aes(WL,runMean(scale(F4.1))),col="grey50",size=1)+
+  geom_line(aes(WL,runMean(scale(sco$PC17))),col="blue",size=1)+
+  annotate(geom="text", x=3000, y=3, label="PC17",color="blue")+
+  annotate(geom="text", x=3000, y=4, label="Glycyl-L-Glutamic Acid",color="black")+
+  #annotate(geom="text", x=3000, y=6, label="Glycyl-L-Glutamic Acid",color="grey50")+
+  scale_x_reverse()
+
+
+Loadings<-ggplot(loa.s,aes(Depth,PC17))+ ylab("Loadings")+
+  geom_point(aes(color=Station), size=3)+
+  geom_line(aes(color=Station), size=1)
+  
+g<-gridExtra::grid.arrange(Spec, Loadings, ncol=2)
+
+ggsave("Eco.PC17xx_ATR.jpg", g, width = 19, height =5, units = "cm")  
