@@ -1,6 +1,6 @@
 ################################################################################
 # Article: Organic matter potential microbial consumption under aerobic and anaerobic conditions along salt marsh soil profiles.
-# Author: Nerea Piñeiro-Juncal (NPJuncal)
+# Author: Nerea Piñeiro-Juncal (@NPJuncal)
 # V 3.0
 # Year: 2023
 ################################################################################
@@ -98,6 +98,155 @@ CV<-cbind(coords,CV) # visual identification of outlayer
 write.csv(CV,"CV.csv",sep=";", dec=",")
 
 
+##########################
+### Clean T1, T2 ad T3 ###
+##########################
+
+# Load Data
+
+File<-"T1.csv"
+A<-read.csv(File, header=T, sep=";", dec=".")
+T1<-as.data.frame(A)
+
+File<-"T2.csv"
+A<-read.csv(File, header=T, sep=";", dec=".")
+T2<-as.data.frame(A)
+
+File<-"T3.csv"
+A<-read.csv(File, header=T, sep=";", dec=".")
+T3<-as.data.frame(A)
+
+#substract T0 to Tx
+
+FT1<-cbind(T1[,c(1:6)],(T1[,c(7:102)])-(T0[,c(7:102)]))
+FT2<-cbind(T2[,c(1:6)],(T2[,c(7:102)])-(T0[,c(7:102)]))
+FT3<-cbind(T3[,c(1:6)],(T3[,c(7:102)])-(T0[,c(7:102)]))
+
+
+#some of the values for the control wells A0,A5,A9 and other wells were there was no consumption are negative
+#measure method error? we check how negative the values
+
+min(na.omit(FT1[,c(7:102)]))
+min(na.omit(FT2[,c(7:102)]))
+min(na.omit(FT3[,c(7:102)]))
+
+#substitute negative values for 0
+FT1[FT1 < 0] <- 0
+FT2[FT2 < 0] <- 0
+FT3[FT3 < 0] <- 0
+
+write.csv(FT1,"FT1.csv",sep=";", dec=",")
+write.csv(FT2,"FT2.csv",sep=";", dec=",")
+write.csv(FT3,"FT3.csv",sep=";", dec=",")
+
+# estimation of the Coefficient of variation among plate replicates
+
+### FT1 ####
+FR<-FT1[,c(7:38)]#First replicate
+SR<-FT1[,c(39:70)]#second replicate
+TR<-FT1[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+FLR.1 = aaply(laply(all.dat, as.matrix), c(2, 3), mean) # media de las tres replicas
+FLR.sd.1 = aaply(laply(all.dat, as.matrix), c(2, 3), sd) # estandar deviation of three replicates
+FLR.cv.1<-FLR.sd.1/FLR.1 # var coef of three replicates
+
+count(as.data.frame(FLR.cv.1>0.3))
+
+#There are some value in our plates that are very different from their replicates
+#For example HAL C 40-42 ANA T0 (A1: 0.5, A5: 0.1, A9: 0.1)
+#In this case we want to identify the deviated value and eliminate it
+#From FLR.cv we are going to get a list of compounds and plates were cv is higher than 0.3
+
+coords<-as.data.frame(which(FLR.cv.1 > 0.3, arr.ind = TRUE))
+
+CV.1<- data.frame(R1=numeric(), 
+                  R2=numeric(),
+                  R3=numeric())#dataframe values to check
+
+for(i in 1:nrow(coords)) {
+  
+  CV.1[i,1]<-FR[coords[i,1],coords[i,2]]
+  CV.1[i,2]<-SR[coords[i,1],coords[i,2]]
+  CV.1[i,3]<-TR[coords[i,1],coords[i,2]]
+  
+}
+
+CV.1<-cbind(coords,CV.1) # visual identification of outlayer
+
+write.csv(CV.1,"CV.1.csv",sep=";", dec=",")
+
+### FT2 ####
+FR<-FT2[,c(7:38)]#First replicate
+SR<-FT2[,c(39:70)]#second replicate
+TR<-FT2[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+FLR.2 = aaply(laply(all.dat, as.matrix), c(2, 3), mean) # media de las tres replicas
+FLR.sd.2 = aaply(laply(all.dat, as.matrix), c(2, 3), sd) # estandar deviation of three replicates
+FLR.cv.2<-FLR.sd.2/FLR.2 # var coef of three replicates
+
+count(as.data.frame(FLR.cv.2>0.3))
+
+#There are some value in our plates that are very different from their replicates
+#For example HAL C 40-42 ANA T0 (A1: 0.5, A5: 0.1, A9: 0.1)
+#In this case we want to identify the deviated value and eliminate it
+#From FLR.cv we are going to get a list of compounds and plates were cv is higher than 0.3
+
+coords<-as.data.frame(which(FLR.cv.2 > 0.3, arr.ind = TRUE))
+
+CV.2<- data.frame(R1=numeric(), 
+                  R2=numeric(),
+                  R3=numeric())#dataframe values to check
+
+for(i in 1:nrow(coords)) {
+  
+  CV.2[i,1]<-FR[coords[i,1],coords[i,2]]
+  CV.2[i,2]<-SR[coords[i,1],coords[i,2]]
+  CV.2[i,3]<-TR[coords[i,1],coords[i,2]]
+  
+}
+
+CV.2<-cbind(coords,CV.2) # visual identification of outlayer
+
+write.csv(CV.2,"CV.2.csv",sep=";", dec=",")
+
+### FT3 ####
+FR<-FT3[,c(7:38)]#First replicate
+SR<-FT3[,c(39:70)]#second replicate
+TR<-FT3[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+FLR.3 = aaply(laply(all.dat, as.matrix), c(2, 3), mean) # media de las tres replicas
+FLR.sd.3 = aaply(laply(all.dat, as.matrix), c(2, 3), sd) # estandar deviation of three replicates
+FLR.cv.3<-FLR.sd.3/FLR.3 # var coef of three replicates
+
+count(as.data.frame(FLR.cv.3>0.3))
+
+#There are some value in our plates that are very different from their replicates
+#For example HAL C 40-42 ANA T0 (A1: 0.5, A5: 0.1, A9: 0.1)
+#In this case we want to identify the deviated value and eliminate it
+#From FLR.cv we are going to get a list of compounds and plates were cv is higher than 0.3
+
+coords<-as.data.frame(which(FLR.cv.3 > 0.3, arr.ind = TRUE))
+
+CV.3<- data.frame(R1=numeric(), 
+                  R2=numeric(),
+                  R3=numeric())#dataframe values to check
+
+for(i in 1:nrow(coords)) {
+  
+  CV.3[i,1]<-FR[coords[i,1],coords[i,2]]
+  CV.3[i,2]<-SR[coords[i,1],coords[i,2]]
+  CV.3[i,3]<-TR[coords[i,1],coords[i,2]]
+  
+}
+
+CV.3<-cbind(coords,CV.3) # visual identification of outlayer
+
+write.csv(CV.3,"CV.3.csv",sep=";", dec=",")
+
+
 ###################################################################################
 ### load data without outlayers and generate final values per plate and compound###
 ###################################################################################
@@ -129,6 +278,88 @@ DF<-cbind(T4T[,c(1:6)],T4T_m)
 
 DF<-subset(DF, Tampa!="Nao")
 write.csv(DF,"DF.csv",sep=";", dec=",")
+
+# T1T ####
+
+File<-"FT1_cv.csv"
+T1T<-read.csv(File, header=T, sep=";", dec=".")
+T1T<-as.data.frame(T1T)
+
+#% of eliminated values over the total
+
+pc.dv<-((sum(is.na(T1T[-4,c(7:102)])))*100)/(nrow(T1T[-4,c(7:102)])*ncol(T1T[-4,c(7:102)]))
+print(pc.dv)
+
+# estimation of the mean value per plate and compound
+
+FR<-T1T[,c(7:38)]#First replicate
+SR<-T1T[,c(39:70)]#second replicate
+TR<-T1T[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+T1T_m = aaply(laply(all.dat, as.matrix), c(2, 3), mean, na.rm=TRUE)
+
+T1T.f<-cbind(T1T[,c(1:6)],T1T_m)
+
+#Substract plates measured without lid
+
+T1T.f<-subset(T1T.f, Tampa!="Nao")
+write.csv(T1T.f,"T1T.f.csv",sep=";", dec=",")
+
+# T2T ####
+
+File<-"FT2_cv.csv"
+T2T<-read.csv(File, header=T, sep=";", dec=".")
+T2T<-as.data.frame(T2T)
+
+#% of eliminated values over the total
+
+pc.dv<-((sum(is.na(T2T[-4,c(7:102)])))*100)/(nrow(T2T[-4,c(7:102)])*ncol(T2T[-4,c(7:102)]))
+print(pc.dv)
+
+# estimation of the mean value per plate and compound
+
+FR<-T2T[,c(7:38)]#First replicate
+SR<-T2T[,c(39:70)]#second replicate
+TR<-T2T[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+T2T_m = aaply(laply(all.dat, as.matrix), c(2, 3), mean, na.rm=TRUE)
+
+T2T.f<-cbind(T2T[,c(1:6)],T2T_m)
+
+#Substract plates measured without lid
+
+T2T.f<-subset(T2T.f, Tampa!="Nao")
+write.csv(T2T.f,"T2T.f.csv",sep=";", dec=",")
+
+# T3T ####
+
+File<-"FT3_cv.csv"
+T3T<-read.csv(File, header=T, sep=";", dec=".")
+T3T<-as.data.frame(T3T)
+
+#% of eliminated values over the total
+
+pc.dv<-((sum(is.na(T3T[-4,c(7:102)])))*100)/(nrow(T3T[-4,c(7:102)])*ncol(T3T[-4,c(7:102)]))
+print(pc.dv)
+
+# estimation of the mean value per plate and compound
+
+FR<-T3T[,c(7:38)]#First replicate
+SR<-T3T[,c(39:70)]#second replicate
+TR<-T3T[,c(71:102)]#third replicate
+
+all.dat <- list(dat1=FR, dat2=SR, dat3=TR)
+T3T_m = aaply(laply(all.dat, as.matrix), c(2, 3), mean, na.rm=TRUE)
+
+T3T.f<-cbind(T3T[,c(1:6)],T3T_m)
+
+#Substract plates measured without lid
+
+T3T.f<-subset(T3T.f, Tampa!="Nao")
+write.csv(T3T.f,"T3T.f.csv",sep=";", dec=",")
+
 
 #################################################
 ### Built final dataframe for results analysis###
@@ -201,6 +432,205 @@ J_Aer_42<-subset(Rep,Rep$Station == "J" & Rep$Depth == 42 & Rep$Met == "AER")
 B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),]<-
   c(as.character(B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_42[,c(7:38)])))
 
+
+
+# T1T ####
+#data.frame with the replicate plates
+Rep1<-subset(T1T.f,T1T.f$Depth == 4 | T1T.f$Depth == 42)
+
+DFA<-subset(T1T.f, T1T.f$Station == "ATR" & T1T.f$Core == "C")
+DFB<-subset(T1T.f, T1T.f$Station =="BOL" & T1T.f$Core == "A")
+DFJ<-subset(T1T.f, T1T.f$Station =="J" & T1T.f$Core == "C")
+DFBB<-subset(T1T.f, T1T.f$Station =="BB" & T1T.f$Core == "A")
+
+T1T.f.c<-as.data.frame(rbind(DFA,DFB,DFJ,DFBB))
+
+#substitute 4 and 42 plates by the average of the replicates
+
+ATR_Ana_4<-subset(Rep11,Rep11$Station == "ATR" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_4[,c(7:38)])))
+ATR_Aer_4<-subset(Rep1,Rep1$Station == "ATR" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(ATR_Aer_4[,c(7:38)])))
+ATR_Ana_42<-subset(Rep1,Rep1$Station == "ATR" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_42[,c(7:38)])))
+ATR_Aer_42<-subset(Rep1,Rep1$Station == "ATR" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(na.omit(ATR_Aer_42[,c(7:38)]))))
+
+BOL_Ana_4<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_4[,c(7:38)])))
+BOL_Aer_4<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_4[,c(7:38)])))
+BOL_Ana_42<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_42[,c(7:38)])))
+BOL_Aer_42<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_42[,c(7:38)])))
+
+BB_Ana_4<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_4[,c(7:38)])))
+BB_Aer_4<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_4[,c(7:38)])))
+BB_Ana_42<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_42[,c(7:38)])))
+BB_Aer_42<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_42[,c(7:38)])))
+
+J_Ana_4<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_4[,c(7:38)])))
+J_Aer_4<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_4[,c(7:38)])))
+J_Ana_42<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_42[,c(7:38)])))
+J_Aer_42<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),]<-
+  c(as.character(T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_42[,c(7:38)])))
+
+
+
+# T2T ####
+#data.frame with the replicate plates
+Rep2<-subset(T2T.f,T2T.f$Depth == 4 | T2T.f$Depth == 42)
+
+DFA<-subset(T2T.f, T2T.f$Station == "ATR" & T2T.f$Core == "C")
+DFB<-subset(T2T.f, T2T.f$Station =="BOL" & T2T.f$Core == "A")
+DFJ<-subset(T2T.f, T2T.f$Station =="J" & T2T.f$Core == "C")
+DFBB<-subset(T2T.f, T2T.f$Station =="BB" & T2T.f$Core == "A")
+
+T2T.f.c<-as.data.frame(rbind(DFA,DFB,DFJ,DFBB))
+
+#substitute 4 and 42 plates by the average of the replicates
+
+ATR_Ana_4<-subset(Rep2,Rep2$Station == "ATR" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_4[,c(7:38)])))
+ATR_Aer_4<-subset(Rep2,Rep2$Station == "ATR" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(ATR_Aer_4[,c(7:38)])))
+ATR_Ana_42<-subset(Rep2,Rep2$Station == "ATR" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_42[,c(7:38)])))
+ATR_Aer_42<-subset(Rep2,Rep2$Station == "ATR" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "ATR" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(na.omit(ATR_Aer_42[,c(7:38)]))))
+
+BOL_Ana_4<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_4[,c(7:38)])))
+BOL_Aer_4<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_4[,c(7:38)])))
+BOL_Ana_42<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_42[,c(7:38)])))
+BOL_Aer_42<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_42[,c(7:38)])))
+
+BB_Ana_4<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_4[,c(7:38)])))
+BB_Aer_4<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_4[,c(7:38)])))
+BB_Ana_42<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_42[,c(7:38)])))
+BB_Aer_42<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_42[,c(7:38)])))
+
+J_Ana_4<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_4[,c(7:38)])))
+J_Aer_4<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_4[,c(7:38)])))
+J_Ana_42<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_42[,c(7:38)])))
+J_Aer_42<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),]<-
+  c(as.character(T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_42[,c(7:38)])))
+
+
+# T3T ####
+#data.frame with the replicate plates
+Rep3<-subset(T3T.f,T3T.f$Depth == 4 | T3T.f$Depth == 42)
+
+DFA<-subset(T3T.f, T3T.f$Station == "ATR" & T3T.f$Core == "C")
+DFB<-subset(T3T.f, T3T.f$Station =="BOL" & T3T.f$Core == "A")
+DFJ<-subset(T3T.f, T3T.f$Station =="J" & T3T.f$Core == "C")
+DFBB<-subset(T3T.f, T3T.f$Station =="BB" & T3T.f$Core == "A")
+
+T3T.f.c<-as.data.frame(rbind(DFA,DFB,DFJ,DFBB))
+
+#substitute 4 and 42 plates by the average of the replicates
+
+ATR_Ana_4<-subset(Rep3,Rep3$Station == "ATR" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_4[,c(7:38)])))
+ATR_Aer_4<-subset(Rep3,Rep3$Station == "ATR" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(ATR_Aer_4[,c(7:38)])))
+ATR_Ana_42<-subset(Rep3,Rep3$Station == "ATR" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_42[,c(7:38)])))
+ATR_Aer_42<-subset(Rep3,Rep3$Station == "ATR" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "ATR" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(na.omit(ATR_Aer_42[,c(7:38)]))))
+
+BOL_Ana_4<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_4[,c(7:38)])))
+BOL_Aer_4<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_4[,c(7:38)])))
+BOL_Ana_42<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BOL_Ana_42[,c(7:38)])))
+BOL_Aer_42<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BOL_Aer_42[,c(7:38)])))
+
+BB_Ana_4<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_4[,c(7:38)])))
+BB_Aer_4<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_4[,c(7:38)])))
+BB_Ana_42<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(BB_Ana_42[,c(7:38)])))
+BB_Aer_42<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(BB_Aer_42[,c(7:38)])))
+
+J_Ana_4<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_4[,c(7:38)])))
+J_Aer_4<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_4[,c(7:38)])))
+J_Ana_42<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(J_Ana_42[,c(7:38)])))
+J_Aer_42<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),]<-
+  c(as.character(T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),c(1:6)]), as.numeric(colMeans(J_Aer_42[,c(7:38)])))
 
 #########################
 ### Diversity indexes ###
@@ -286,6 +716,327 @@ B[which(B$Station == "J" & B$Depth == 42 & B$Met == "ANA"),"H.SE"]<-sd(J_Ana_42$
 J_Aer_42<-subset(Rep,Rep$Station == "J" & Rep$Depth == 42 & Rep$Met == "AER")
 B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_42$AWCD)/nrow(J_Aer_42)
 B[which(B$Station == "J" & B$Depth == 42 & B$Met == "AER"),"H.SE"]<-sd(J_Aer_42$H)/nrow(J_Aer_42)
+
+# T1T ####
+
+T1T.f.c[,"AWCD"]<-NA
+T1T.f.c[,"AWCD.SE"]<-NA
+T1T.f.c[,"H"]<-NA
+T1T.f.c[,"H.SE"]<-NA
+
+
+for (i in 1:nrow(T1T.f.c)) {
+  
+  vec<-as.numeric(T1T.f.c[i,c(8:38)])
+  A1<-T1T.f.c[i,7]
+  T1T.f.c[i,"AWCD"]<- (sum(vec-as.numeric(A1))/31)
+  T1T.f.c[i,"H"]<-diversity(as.numeric(T1T.f.c[i,c(8:38)]), "shannon")}
+
+Rep1<-subset(T1T.f,T1T.f$Depth == 4 | T1T.f$Depth == 42)
+Rep1[,"AWCD"]<-NA
+Rep1[,"H"]<-NA
+
+for (i in 1:nrow(Rep1)) {
+  
+  vec<-as.numeric(Rep1[i,c(8:38)])
+  A1<-Rep1[i,7]
+  Rep1[i,"AWCD"]<- (sum(vec-A1)/31)
+  Rep1[i,"H"]<-diversity(Rep1[i,c(8:38)], "shannon")}
+
+
+HAL_Ana_4<-subset(Rep1,Rep1$Station == "HAL" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(HAL_Ana_4$AWCD)/nrow(HAL_Ana_4)
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(HAL_Ana_4$H)/nrow(HAL_Ana_4)
+HAL_Aer_4<-subset(Rep1,Rep1$Station == "HAL" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(HAL_Aer_4$AWCD)/nrow(HAL_Aer_4)
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(HAL_Aer_4$H)/nrow(HAL_Aer_4)
+HAL_Ana_42<-subset(Rep1,Rep1$Station == "HAL" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(HAL_Ana_42$AWCD)/nrow(HAL_Ana_42)
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(HAL_Ana_42$H)/nrow(HAL_Ana_42)
+HAL_Aer_42<-subset(Rep1,Rep1$Station == "HAL" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(HAL_Aer_42$AWCD)/nrow(HAL_Aer_42)
+T1T.f.c[which(T1T.f.c$Station == "HAL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(HAL_Aer_42$H)/nrow(HAL_Aer_42)
+
+
+BOL_Ana_4<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_4$AWCD)/nrow(BOL_Ana_4)
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_4$H)/nrow(BOL_Ana_4)
+BOL_Aer_4<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_4$AWCD)/nrow(BOL_Aer_4)
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(BOL_Aer_4$H)/nrow(BOL_Aer_4)
+BOL_Ana_42<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_42$AWCD)/nrow(BOL_Ana_42)
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_42$H)/nrow(BOL_Ana_42)
+BOL_Aer_42<-subset(Rep1,Rep1$Station == "BOL" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_42$AWCD)/nrow(BOL_Aer_42)
+T1T.f.c[which(T1T.f.c$Station == "BOL" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(BOL_Aer_42$H)/nrow(BOL_Aer_42)
+
+
+BB_Ana_4<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_4$AWCD)/nrow(BB_Ana_4)
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(BB_Ana_4$H)/nrow(BB_Ana_4)
+BB_Aer_4<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_4$AWCD)/nrow(BB_Aer_4)
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(BB_Aer_4$H)/nrow(BB_Aer_4)
+BB_Ana_42<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_42$AWCD)/nrow(BB_Ana_42)
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(BB_Ana_42$H)/nrow(BB_Ana_42)
+BB_Aer_42<-subset(Rep1,Rep1$Station == "BB" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_42$AWCD)/nrow(BB_Aer_42)
+T1T.f.c[which(T1T.f.c$Station == "BB" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(BB_Aer_42$H)/nrow(BB_Aer_42)
+
+
+J_Ana_4<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_4$AWCD)/nrow(J_Ana_4)
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(J_Ana_4$H)/nrow(J_Ana_4)
+J_Aer_4<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 4 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_4$AWCD)/nrow(J_Aer_4)
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(J_Aer_4$H)/nrow(J_Aer_4)
+J_Ana_42<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 42 & Rep1$Met == "ANA")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_42$AWCD)/nrow(J_Ana_42)
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "ANA"),"H.SE"]<-sd(J_Ana_42$H)/nrow(J_Ana_42)
+J_Aer_42<-subset(Rep1,Rep1$Station == "J" & Rep1$Depth == 42 & Rep1$Met == "AER")
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_42$AWCD)/nrow(J_Aer_42)
+T1T.f.c[which(T1T.f.c$Station == "J" & T1T.f.c$Depth == 42 & T1T.f.c$Met == "AER"),"H.SE"]<-sd(J_Aer_42$H)/nrow(J_Aer_42)
+
+# T2T ####
+
+T2T.f.c[,"AWCD"]<-NA
+T2T.f.c[,"AWCD.SE"]<-NA
+T2T.f.c[,"H"]<-NA
+T2T.f.c[,"H.SE"]<-NA
+
+
+for (i in 1:nrow(T2T.f.c)) {
+  
+  vec<-as.numeric(T2T.f.c[i,c(8:38)])
+  A1<-T2T.f.c[i,7]
+  T2T.f.c[i,"AWCD"]<- (sum(vec-as.numeric(A1))/31)
+  T2T.f.c[i,"H"]<-diversity(as.numeric(T2T.f.c[i,c(8:38)]), "shannon")}
+
+Rep2<-subset(T2T.f,T2T.f$Depth == 4 | T2T.f$Depth == 42)
+Rep2[,"AWCD"]<-NA
+Rep2[,"H"]<-NA
+
+for (i in 1:nrow(Rep2)) {
+  
+  vec<-as.numeric(Rep2[i,c(8:38)])
+  A1<-Rep2[i,7]
+  Rep2[i,"AWCD"]<- (sum(vec-A1)/31)
+  Rep2[i,"H"]<-diversity(Rep2[i,c(8:38)], "shannon")}
+
+
+HAL_Ana_4<-subset(Rep2,Rep2$Station == "HAL" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(HAL_Ana_4$AWCD)/nrow(HAL_Ana_4)
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(HAL_Ana_4$H)/nrow(HAL_Ana_4)
+HAL_Aer_4<-subset(Rep2,Rep2$Station == "HAL" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(HAL_Aer_4$AWCD)/nrow(HAL_Aer_4)
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(HAL_Aer_4$H)/nrow(HAL_Aer_4)
+HAL_Ana_42<-subset(Rep2,Rep2$Station == "HAL" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(HAL_Ana_42$AWCD)/nrow(HAL_Ana_42)
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(HAL_Ana_42$H)/nrow(HAL_Ana_42)
+HAL_Aer_42<-subset(Rep2,Rep2$Station == "HAL" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(HAL_Aer_42$AWCD)/nrow(HAL_Aer_42)
+T2T.f.c[which(T2T.f.c$Station == "HAL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(HAL_Aer_42$H)/nrow(HAL_Aer_42)
+
+
+BOL_Ana_4<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_4$AWCD)/nrow(BOL_Ana_4)
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_4$H)/nrow(BOL_Ana_4)
+BOL_Aer_4<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_4$AWCD)/nrow(BOL_Aer_4)
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(BOL_Aer_4$H)/nrow(BOL_Aer_4)
+BOL_Ana_42<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_42$AWCD)/nrow(BOL_Ana_42)
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_42$H)/nrow(BOL_Ana_42)
+BOL_Aer_42<-subset(Rep2,Rep2$Station == "BOL" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_42$AWCD)/nrow(BOL_Aer_42)
+T2T.f.c[which(T2T.f.c$Station == "BOL" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(BOL_Aer_42$H)/nrow(BOL_Aer_42)
+
+
+BB_Ana_4<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_4$AWCD)/nrow(BB_Ana_4)
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(BB_Ana_4$H)/nrow(BB_Ana_4)
+BB_Aer_4<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_4$AWCD)/nrow(BB_Aer_4)
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(BB_Aer_4$H)/nrow(BB_Aer_4)
+BB_Ana_42<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_42$AWCD)/nrow(BB_Ana_42)
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(BB_Ana_42$H)/nrow(BB_Ana_42)
+BB_Aer_42<-subset(Rep2,Rep2$Station == "BB" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_42$AWCD)/nrow(BB_Aer_42)
+T2T.f.c[which(T2T.f.c$Station == "BB" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(BB_Aer_42$H)/nrow(BB_Aer_42)
+
+
+J_Ana_4<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 4 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_4$AWCD)/nrow(J_Ana_4)
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(J_Ana_4$H)/nrow(J_Ana_4)
+J_Aer_4<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 4 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_4$AWCD)/nrow(J_Aer_4)
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 4 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(J_Aer_4$H)/nrow(J_Aer_4)
+J_Ana_42<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 42 & Rep2$Met == "ANA")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_42$AWCD)/nrow(J_Ana_42)
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "ANA"),"H.SE"]<-sd(J_Ana_42$H)/nrow(J_Ana_42)
+J_Aer_42<-subset(Rep2,Rep2$Station == "J" & Rep2$Depth == 42 & Rep2$Met == "AER")
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_42$AWCD)/nrow(J_Aer_42)
+T2T.f.c[which(T2T.f.c$Station == "J" & T2T.f.c$Depth == 42 & T2T.f.c$Met == "AER"),"H.SE"]<-sd(J_Aer_42$H)/nrow(J_Aer_42)
+
+
+# T3T ####
+
+T3T.f.c[,"AWCD"]<-NA
+T3T.f.c[,"AWCD.SE"]<-NA
+T3T.f.c[,"H"]<-NA
+T3T.f.c[,"H.SE"]<-NA
+
+
+for (i in 1:nrow(T3T.f.c)) {
+  
+  vec<-as.numeric(T3T.f.c[i,c(8:38)])
+  A1<-T3T.f.c[i,7]
+  T3T.f.c[i,"AWCD"]<- (sum(vec-as.numeric(A1))/31)
+  T3T.f.c[i,"H"]<-diversity(as.numeric(T3T.f.c[i,c(8:38)]), "shannon")}
+
+Rep3<-subset(T3T.f,T3T.f$Depth == 4 | T3T.f$Depth == 42)
+Rep3[,"AWCD"]<-NA
+Rep3[,"H"]<-NA
+
+for (i in 1:nrow(Rep3)) {
+  
+  vec<-as.numeric(Rep3[i,c(8:38)])
+  A1<-Rep3[i,7]
+  Rep3[i,"AWCD"]<- (sum(vec-A1)/31)
+  Rep3[i,"H"]<-diversity(Rep3[i,c(8:38)], "shannon")}
+
+
+HAL_Ana_4<-subset(Rep3,Rep3$Station == "HAL" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(HAL_Ana_4$AWCD)/nrow(HAL_Ana_4)
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(HAL_Ana_4$H)/nrow(HAL_Ana_4)
+HAL_Aer_4<-subset(Rep3,Rep3$Station == "HAL" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(HAL_Aer_4$AWCD)/nrow(HAL_Aer_4)
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(HAL_Aer_4$H)/nrow(HAL_Aer_4)
+HAL_Ana_42<-subset(Rep3,Rep3$Station == "HAL" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(HAL_Ana_42$AWCD)/nrow(HAL_Ana_42)
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(HAL_Ana_42$H)/nrow(HAL_Ana_42)
+HAL_Aer_42<-subset(Rep3,Rep3$Station == "HAL" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(HAL_Aer_42$AWCD)/nrow(HAL_Aer_42)
+T3T.f.c[which(T3T.f.c$Station == "HAL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(HAL_Aer_42$H)/nrow(HAL_Aer_42)
+
+
+BOL_Ana_4<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_4$AWCD)/nrow(BOL_Ana_4)
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_4$H)/nrow(BOL_Ana_4)
+BOL_Aer_4<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_4$AWCD)/nrow(BOL_Aer_4)
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(BOL_Aer_4$H)/nrow(BOL_Aer_4)
+BOL_Ana_42<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BOL_Ana_42$AWCD)/nrow(BOL_Ana_42)
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(BOL_Ana_42$H)/nrow(BOL_Ana_42)
+BOL_Aer_42<-subset(Rep3,Rep3$Station == "BOL" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BOL_Aer_42$AWCD)/nrow(BOL_Aer_42)
+T3T.f.c[which(T3T.f.c$Station == "BOL" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(BOL_Aer_42$H)/nrow(BOL_Aer_42)
+
+
+BB_Ana_4<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_4$AWCD)/nrow(BB_Ana_4)
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(BB_Ana_4$H)/nrow(BB_Ana_4)
+BB_Aer_4<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_4$AWCD)/nrow(BB_Aer_4)
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(BB_Aer_4$H)/nrow(BB_Aer_4)
+BB_Ana_42<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(BB_Ana_42$AWCD)/nrow(BB_Ana_42)
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(BB_Ana_42$H)/nrow(BB_Ana_42)
+BB_Aer_42<-subset(Rep3,Rep3$Station == "BB" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(BB_Aer_42$AWCD)/nrow(BB_Aer_42)
+T3T.f.c[which(T3T.f.c$Station == "BB" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(BB_Aer_42$H)/nrow(BB_Aer_42)
+
+
+J_Ana_4<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 4 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_4$AWCD)/nrow(J_Ana_4)
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(J_Ana_4$H)/nrow(J_Ana_4)
+J_Aer_4<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 4 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_4$AWCD)/nrow(J_Aer_4)
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 4 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(J_Aer_4$H)/nrow(J_Aer_4)
+J_Ana_42<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 42 & Rep3$Met == "ANA")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"AWCD.SE"]<-sd(J_Ana_42$AWCD)/nrow(J_Ana_42)
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "ANA"),"H.SE"]<-sd(J_Ana_42$H)/nrow(J_Ana_42)
+J_Aer_42<-subset(Rep3,Rep3$Station == "J" & Rep3$Depth == 42 & Rep3$Met == "AER")
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"AWCD.SE"]<-sd(J_Aer_42$AWCD)/nrow(J_Aer_42)
+T3T.f.c[which(T3T.f.c$Station == "J" & T3T.f.c$Depth == 42 & T3T.f.c$Met == "AER"),"H.SE"]<-sd(J_Aer_42$H)/nrow(J_Aer_42)
+
+
+
+############################
+### Temporal differences ###
+############################
+
+# built data matrix of average and sd of AWCD and H per station over time ####
+TEMP<-cbind(T1T.f.c[,c(1:5,39,41)],T2T.f.c[,c(39,41)],T3T.f.c[,c(39,41)],B[,c(39,41)])
+colnames(TEMP)<-c("Sample","Station","Core","Depth","Met","AWCD.T1","H.T1","AWCD.T2","H.T2","AWCD.T3","H.T3","AWCD.T4","H.T4")
+
+
+Av.TEMP<- data.frame(Station=character(), 
+                     Metabolism=character(),
+                     AWCD.T1=numeric(),
+                     H.T1=numeric(),
+                     AWCD.T2=numeric(),
+                     H.T2=numeric(),
+                     AWCD.T3=numeric(),
+                     H.T3=numeric(),
+                     AWCD.T4=numeric(),
+                     H.T4=numeric(),
+                     AWCD.T1.sd=numeric(),
+                     H.T1.sd=numeric(),
+                     AWCD.T2.sd=numeric(),
+                     H.T2.sd=numeric(),
+                     AWCD.T3.sd=numeric(),
+                     H.T3.sd=numeric(),
+                     AWCD.T4.sd=numeric(),
+                     H.T4.sd=numeric(),
+                     Label=character())
+
+Stat<-subset(TEMP,TEMP$Station == "ATR" & TEMP$Met == "AER")
+Av.TEMP[1,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(Stat[,c(6:13)])),
+                as.numeric(apply(Stat[,c(6:13)],2,sd)),NA)
+Stat<-subset(TEMP,TEMP$Station == "ATR" & TEMP$Met == "ANA")
+Av.TEMP[2,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(Stat[,c(6:13)])),
+                as.numeric(apply(Stat[,c(6:13)],2,sd)),NA)
+Stat<-subset(TEMP,TEMP$Station == "BOL" & TEMP$Met == "AER")
+Av.TEMP[3,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(Stat[,c(6:13)])),
+                as.numeric(apply(Stat[,c(6:13)],2,sd)),NA)
+Stat<-subset(TEMP,TEMP$Station == "BOL" & TEMP$Met == "ANA")
+Av.TEMP[4,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(Stat[,c(6:13)])),
+                as.numeric(apply(Stat[,c(6:13)],2,sd)),NA)
+Stat<-subset(TEMP,TEMP$Station == "BB" & TEMP$Met == "AER")
+Av.TEMP[5,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(Stat[,c(6:13)])),
+                as.numeric(apply(Stat[,c(6:13)],2,sd)),NA)
+Stat<-subset(TEMP,TEMP$Station == "BB" & TEMP$Met == "ANA")
+Av.TEMP[6,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(Stat[,c(6:13)])),
+                as.numeric(apply(Stat[,c(6:13)],2,sd)),NA)
+Stat<-subset(TEMP,TEMP$Station == "J" & TEMP$Met == "AER")
+Av.TEMP[7,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(Stat[,c(6:13)])),
+                as.numeric(apply(Stat[,c(6:13)],2,sd)),NA)
+Stat<-subset(TEMP,TEMP$Station == "J" & TEMP$Met == "ANA")
+Av.TEMP[8,]<- c(as.character(Stat[1,c(2,5)]), as.numeric(colMeans(na.omit(Stat[,c(6:13)]))),
+                as.numeric(apply(Stat[,c(6:13)],2,sd,na.rm=TRUE)),NA)
+
+Av.TEMP<-Av.TEMP %>%
+  unite(Label, Station, Metabolism, sep="_", remove = FALSE)
+
+Av.TEMP[,c(4:19)] <- sapply(Av.TEMP[,c(4:19)],as.numeric)
+
+write.csv(Av.TEMP,"Av.TEMP.csv",sep=";", dec=",")
+
+# times comparison 
+
+p1<-ggplot(TEMP, aes(AWCD.T1,AWCD.T4))+
+  geom_point(aes(color=Station,shape=Met))
+
+p2<-ggplot(TEMP, aes(H.T1,H.T4))+
+  geom_point(aes(color=Station,shape=Met))
+
+g<-gridExtra::grid.arrange(p1,p2, ncol=2)
+ggsave("Comp.T1-T4.jpg", g, width = 19, height =7.5, units = "cm")
 
 
 ########################################################
@@ -400,26 +1151,6 @@ Aer.vs.ana<-plot_grid(Bxp.AWCD,Bxp.H, align = "h", nrow = 1, rel_widths = c(5/6,
 ggsave("Aer.vs.ana.jpg",Aer.vs.ana, units="cm", width = 20, height = 10)
 
 
-#C$Depth<-as.numeric(C$Depth)
-
-ggplot(C,aes(Depth,H))+ ylab("Shannon-Wiener diversity index (H')")+
-  geom_point(aes(color=Met))+
-  coord_flip()+
-  scale_x_reverse()+
-  facet_wrap(~Station, scale="fixed")
-
-
-
-### Significant differences between stations ###
-
-C2<- subset(B, B$Depth == "16" | B$Depth == "26" | B$Depth == "42")
-
-C2.AER<-subset(C2, Met == "AER")
-C2.ANA<-subset(C2, Met == "ANA")
-
-ggplot(C2.AER, aes(Station,H))+geom_point()
-
-
 ############################
 ### Compound consumption ###
 ############################
@@ -433,7 +1164,6 @@ ANA.B$Depth[ANA.B$Depth == "4"] <- "04"
 ANA.B<-ANA.B %>% mutate(Sample=paste(ANA.B$Station,ANA.B$Depth))
 
 write.csv(B,"FinalData.csv",sep=";", dec=",")
-
 
 ### Average compound consumption per station
 
@@ -513,6 +1243,7 @@ CsC<-ggplot(MeansStm, aes(value,Sample))+ xlab("Average Color Development")+ yla
   facet_wrap(~Guilt, scale="fixed", ncol = 2)
 
 ggsave("Carbon sources comp.jpg",CsC, units="cm", width = 10, height = 20)
+
 
 
 ##################################
@@ -596,8 +1327,9 @@ P3<-ggplot(Data,aes(x=factor(Station), CaCO3)) + labs(y = expression("CaCO"["3"]
   geom_text(data=Tk2, aes(label=let, x=Station, y=17), size=4)
 
 
-grid.arrange(P1, P2, P3, nrow=2 ,ncol = 2, layout_matrix = cbind(c(1,2),c(1,3)))
+OM_CaCO3<-grid.arrange(P1, P2, P3, nrow=2 ,ncol = 2, layout_matrix = cbind(c(1,2),c(1,3)))
 
+ggsave("OM-CaCO3.jpg",OM_CaCO3, units="cm", width = 19, height = 15)
 
 ## grain size
 
@@ -637,6 +1369,7 @@ P3<-ggplot(Data,aes(x=factor(Station), Silt)) + ylab("Silt (0.063-0.125 mm) %")+
   geom_jitter()
 
 
-grid.arrange(P1, P2, P3, ncol = 3, 
+GranDis<-grid.arrange(P1, P2, P3, ncol = 3, 
              layout_matrix = cbind(c(1,1), c(1,1),c(2,3)))
 
+ggsave("GranDis.jpg",GranDis, units="cm", width = 19, height = 15)
