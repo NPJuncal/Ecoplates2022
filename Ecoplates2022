@@ -1,6 +1,5 @@
 ################################################################################
 # Article: Organic matter potential microbial consumption under aerobic and anaerobic conditions along salt marsh soil profiles.
-# Part 1
 # Author: Nerea Piñeiro-Juncal (@NPJuncal)
 # V 3.0
 # Year: 2023
@@ -448,7 +447,7 @@ T1T.f.c<-as.data.frame(rbind(DFA,DFB,DFJ,DFBB))
 
 #substitute 4 and 42 plates by the average of the replicates
 
-ATR_Ana_4<-subset(Rep11,Rep11$Station == "ATR" & Rep1$Depth == 4 & Rep1$Met == "ANA")
+ATR_Ana_4<-subset(Rep1,Rep1$Station == "ATR" & Rep1$Depth == 4 & Rep1$Met == "ANA")
 T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),]<-
   c(as.character(T1T.f.c[which(T1T.f.c$Station == "ATR" & T1T.f.c$Depth == 4 & T1T.f.c$Met == "ANA"),c(1:6)]), as.numeric(colMeans(ATR_Ana_4[,c(7:38)])))
 ATR_Aer_4<-subset(Rep1,Rep1$Station == "ATR" & Rep1$Depth == 4 & Rep1$Met == "AER")
@@ -1234,16 +1233,97 @@ MeansStm$Guilt[MeansStm$Guilt == "F2"|MeansStm$Guilt =="A3"|MeansStm$Guilt == "B
 MeansStm$Guilt[MeansStm$Guilt == "A4"|MeansStm$Guilt =="B4"|MeansStm$Guilt == "C4"| MeansStm$Guilt =="D4"| MeansStm$Guilt =="E4"| MeansStm$Guilt =="F4"] <- "Amino acids"
 MeansStm$Guilt[MeansStm$Guilt == "G4"|MeansStm$Guilt == "H4"] <- "Amines"
 
+colnames(MeansStm)<-c("Station","Compound","value","Guilt")
 
-CsC<-ggplot(MeansStm, aes(value,Sample))+ xlab("Average Color Development")+ ylab("Station & Metabolism")+
-  geom_point()+
+#CsC<-ggplot(MeansStm, aes(value,Station))+ xlab("Average Color Development at T4")+ ylab("Station & Metabolism")+
+  #geom_point()+
   #geom_rect(aes(xmin=(mean(B$A1)-sd(B$A1)), xmax=(mean(B$A1)+sd(B$A1)), ymin=0, ymax=Inf),fill="grey",alpha=0.02)+
+  #geom_vline(xintercept = mean(as.numeric(B$A1)))+
+  #geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
+  #geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
+  #facet_wrap(~Guilt, scale="fixed", ncol = 2)
+
+
+#summary figure
+X<-split(MeansStm, MeansStm$Guilt)
+
+FigData<-as.data.frame(X[1])
+colnames(FigData)<-colnames(MeansStm)
+Amines<-ggplot(FigData, aes(value,Station))+ ggtitle("Amines")+
+  geom_point(aes(color=Compound))+
+  labs(color=NULL)+
   geom_vline(xintercept = mean(as.numeric(B$A1)))+
   geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
   geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
-  facet_wrap(~Guilt, scale="fixed", ncol = 2)
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        plot.title = element_text(hjust = 0.5))
 
-ggsave("Carbon sources comp.jpg",CsC, units="cm", width = 10, height = 20)
+FigData<-as.data.frame(X[2])
+colnames(FigData)<-colnames(MeansStm)
+AA<-ggplot(FigData, aes(value,Station))+ ggtitle("Amino Acids")+
+  geom_point(aes(color=Compound))+
+  labs(color=NULL)+
+  geom_vline(xintercept = mean(as.numeric(B$A1)))+
+  geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
+  geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+FigData<-as.data.frame(X[3])
+colnames(FigData)<-colnames(MeansStm)
+Ch<-ggplot(FigData, aes(value,Station))+ ggtitle("Carbohydrates")+
+  geom_point(aes(color=Compound))+
+  labs(color=NULL)+
+  geom_vline(xintercept = mean(as.numeric(B$A1)))+
+  geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
+  geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+FigData<-as.data.frame(X[4])
+colnames(FigData)<-colnames(MeansStm)
+CA<-ggplot(FigData, aes(value,Station))+ ggtitle("Carboxylic Acids")+
+  geom_point(aes(color=Compound))+
+  labs(color=NULL)+
+  geom_vline(xintercept = mean(as.numeric(B$A1)))+
+  geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
+  geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+FigData<-as.data.frame(X[5])
+colnames(FigData)<-colnames(MeansStm)
+M<-ggplot(FigData, aes(value,Station))+ ggtitle("Miscellaneous")+
+  geom_point(aes(color=Compound))+
+  labs(color=NULL)+
+  geom_vline(xintercept = mean(as.numeric(B$A1)))+
+  geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
+  geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+FigData<-as.data.frame(X[6])
+colnames(FigData)<-colnames(MeansStm)
+P<-ggplot(FigData, aes(value,Station))+ ggtitle("Polymers")+
+  geom_point(aes(color=Compound))+
+  labs(color=NULL)+
+  geom_vline(xintercept = mean(as.numeric(B$A1)))+
+  geom_vline(xintercept = mean(as.numeric(B$A1))-sd(as.numeric(B$A1)),linetype = "dashed")+
+  geom_vline(xintercept = mean(as.numeric(B$A1))+sd(as.numeric(B$A1)),linetype = "dashed")+
+  theme(axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        plot.title = element_text(hjust = 0.5))
+
+
+CsC<-grid.arrange(Amines, AA, Ch, CA, M, P, nrow=3 ,ncol = 2, left = "Station & Metabolism", bottom= "Average Color Development at T4")
+
+
+ggsave("Carbon sources comp.jpg",CsC, units="cm", width = 19, height = 20)
 
 
 
@@ -1308,8 +1388,8 @@ Tk2$let<-c("b","b","b","a")
 P1<-ggplot(Data2,aes(OM,Depth))+
   ggtitle("A") +
   xlab("%")+
-  geom_point(aes(OM,Depth, shape="Organic matter"))+
-  geom_point(aes(CaCO3,Depth, shape="Carbonates"))+
+  geom_point(aes(OM,Depth, shape="Organic matter"), color= "black")+
+  geom_point(aes(CaCO3,Depth, shape="Carbonates"), color= "grey56")+
   scale_y_reverse()+
   facet_grid( ~ Station, scale ='fixed')+
   theme(plot.title = element_text(hjust = 0))
@@ -1335,7 +1415,7 @@ ggsave("OM-CaCO3.jpg",OM_CaCO3, units="cm", width = 19, height = 15)
 ## grain size
 
 DataGr <- melt(Data2[,c(2,5:12)], id.vars = c("Depth","Station"))
-DataGr$variable <- factor(DataGr$variable,levels = c("Clay","Silt","F_Sand","M_Sand","C_Sand","VC_Sand","Gravel"))
+DataGr$variable <- factor(DataGr$variable,levels = c("Silt_Clay","VF_Sand","F_Sand","M_Sand","C_Sand","VC_Sand","Gravel"))
 DataGr$value<-DataGr$value*100
 
 P1<-ggplot(DataGr, aes(fill=variable, y=value, x=Depth)) + ylab("Proportion of grain size particles")+
@@ -1353,8 +1433,8 @@ P1<-ggplot(DataGr, aes(fill=variable, y=value, x=Depth)) + ylab("Proportion of g
   theme(plot.title = element_text(hjust = 0))
 
 
-P2<-ggplot(Data,aes(x=factor(Station), Clay)) + ylab("Clay (<0.063 mm) % ")+
-  geom_boxplot(aes(x=factor(Station), Clay),fill="grey",alpha=0.5)+
+P2<-ggplot(Data,aes(x=factor(Station), Silt_Clay)) + ylab("Silt and Clay (<63 µm) % ")+
+  geom_boxplot(aes(x=factor(Station), Silt_Clay),fill="grey",alpha=0.5)+
   geom_jitter()+
   ggtitle("B") +
   theme(axis.text.x=element_blank(),
@@ -1364,9 +1444,9 @@ P2<-ggplot(Data,aes(x=factor(Station), Clay)) + ylab("Clay (<0.063 mm) % ")+
         #axis.ticks.y=element_blank()
   )
 
-P3<-ggplot(Data,aes(x=factor(Station), Silt)) + ylab("Silt (0.063-0.125 mm) %")+xlab("Station")+
+P3<-ggplot(Data,aes(x=factor(Station), VF_Sand)) + ylab("Very fine Sand (63-125 µm) %")+xlab("Station")+
   ggtitle("C") +
-  geom_boxplot(aes(x=factor(Station), Silt),fill="grey",alpha=0.5)+
+  geom_boxplot(aes(x=factor(Station), VF_Sand),fill="grey",alpha=0.5)+
   geom_jitter()
 
 
