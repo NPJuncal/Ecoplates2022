@@ -5,3 +5,7 @@
 # Year: 2023
 
 #Files: 
+
+Cores.csv: organic matter, carbonates and grain size distribution data
+T0 to T4 csv: raw Ecoplates absorbance data
+FT1_cv to FT4_cv csv: clean ecoplate abs data
