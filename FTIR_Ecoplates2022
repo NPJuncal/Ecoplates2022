@@ -56,23 +56,27 @@ loa.s<-loa[c(1:24),]
 loa.s$Depth<-c(4,16,26,42,4,16,26,42,54,66,86,4,16,26,42,54,66,76,4,16,26,42,54,64)
 loa.s$Station<-c("BB","BB","BB","BB","BOL","BOL","BOL","BOL","BOL","BOL","BOL","ATR","ATR","ATR","ATR","ATR","ATR","ATR","J","J","J","J","J","J")
 
+
+
 write.csv(sco,"Sco_t_Ecop.csv", sep=";", dec=".")
 
 
-Spec<-ggplot(A, aes(WL,runMean(scale(F4.1))))+xlab("Wavenumber (cm-1)")+ylab("Scaled absorbance and scores")+
+Spec<-ggplot(A, aes(WL,runMean(scale(F4.1))))+xlab("Wavenumber (cm-1)")+ylab("Scaled abs and scores")+
   geom_line(size=1)+
-  #geom_line(aes(WL,runMean(scale(F4.1))),col="grey50",size=1)+
+  #geom_line(aes(WL,runMean(scale(C4.1))),col="grey50",size=1)+
   geom_line(aes(WL,runMean(scale(sco$PC17))),col="blue",size=1)+
-  annotate(geom="text", x=3000, y=3, label="PC17",color="blue")+
-  annotate(geom="text", x=3000, y=4, label="Glycyl-L-Glutamic Acid",color="black")+
-  #annotate(geom="text", x=3000, y=6, label="Glycyl-L-Glutamic Acid",color="grey50")+
+  annotate(geom="text", x=3000, y=2, label="PC17",color="blue")+
+  annotate(geom="text", x=3000, y=3, label="Glycyl-L-Glutamic Acid",color="black")+
+  #annotate(geom="text", x=3000, y=5, label="L-Phenilalanine",color="grey50")+
   scale_x_reverse()
 
 
 Loadings<-ggplot(loa.s,aes(Depth,PC17))+ ylab("Loadings")+
   geom_point(aes(color=Station), size=3)+
-  geom_line(aes(color=Station), size=1)
+  geom_line(aes(color=Station), size=1)+
+  scale_color_manual(values=c("blue","red", "orange", "black"))
+
   
 g<-gridExtra::grid.arrange(Spec, Loadings, ncol=2)
 
-ggsave("Eco.PC17xx_ATR.jpg", g, width = 19, height =5, units = "cm")  
+ggsave("Eco.PC17.jpg", g, width = 19, height =5, units = "cm")
